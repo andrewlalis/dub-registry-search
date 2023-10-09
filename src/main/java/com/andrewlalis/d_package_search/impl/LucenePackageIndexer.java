@@ -1,6 +1,7 @@
-package io.github.andrewlalis.dub_registry_search;
+package com.andrewlalis.d_package_search.impl;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.andrewlalis.d_package_search.PackageIndexer;
+import com.andrewlalis.d_package_search.PackageInfo;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -15,7 +16,7 @@ import org.apache.lucene.store.FSDirectory;
 import java.io.IOException;
 import java.nio.file.Path;
 
-public class LucenePackageIndexer implements PackageIndexer, AutoCloseable {
+public class LucenePackageIndexer implements PackageIndexer {
 	private final IndexWriter indexWriter;
 	private final Directory dir;
 	private final Analyzer analyzer;
@@ -29,17 +30,14 @@ public class LucenePackageIndexer implements PackageIndexer, AutoCloseable {
 		this.indexWriter = new IndexWriter(dir, config);
 	}
 
-
 	@Override
-	public void addToIndex(ObjectNode packageJson) throws IOException {
-		String registryId = packageJson.get("_id").asText();
-		String name = packageJson.get("name").asText();
-		String dubUrl = "https://code.dlang.org/packages/" + name;
+	public void addToIndex(PackageInfo info) throws IOException {
+		String dubUrl = "https://code.dlang.org/packages/" + info.name();
 
 		Document doc = new Document();
-		doc.add(new StoredField("registryId", registryId));
-		doc.add(new TextField("name", name, Field.Store.YES));
-		doc.add(new StoredField("dubUrl", dubUrl));
+		doc.add(new TextField("name", info.name(), Field.Store.YES));
+		doc.add(new StoredField("url", dubUrl));
+		indexWriter.addDocument(doc);
 	}
 
 	@Override
