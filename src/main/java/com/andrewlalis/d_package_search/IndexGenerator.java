@@ -25,13 +25,14 @@ public record IndexGenerator(
         Collection<PackageInfo> packages;
         try {
             packages = fetcher.fetch();
+            dur = Duration.between(start, Instant.now());
+            System.out.println("Fetched " + packages.size() + " in " + dur.toMillis() + " ms.");
         } catch (IOException e) {
             System.err.println("Failed to fetch packages: " + e.getMessage());
             return;
         }
+
         try (PackageIndexer indexer = indexerSupplier.get()) {
-            dur = Duration.between(start, Instant.now());
-            System.out.println("Fetched " + packages.size() + " in " + dur.toMillis() + " ms.");
             start = Instant.now();
             for (var pkg : packages) {
                 indexer.addToIndex(pkg);

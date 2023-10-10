@@ -26,9 +26,17 @@ public class DPackageSearch {
 	private static void startIndexerThread(IndexGenerator indexGenerator) {
 		Thread.ofVirtual().start(() -> {
 			while (true) {
+				System.out.println("Will re-index packages in 10 seconds");
+				try {
+					Thread.sleep(Duration.ofSeconds(10));
+				} catch (InterruptedException e) {
+					System.err.println("Indexing thread interrupted: " + e.getMessage());
+					break;
+				}
+				System.out.println("Re-indexing packages now.");
 				indexGenerator.run();
 				try {
-					Thread.sleep(Duration.ofMinutes(5));
+					Thread.sleep(Duration.ofMinutes(60));
 				} catch (InterruptedException e) {
 					System.err.println("Indexing thread interrupted: " + e.getMessage());
 					break;
