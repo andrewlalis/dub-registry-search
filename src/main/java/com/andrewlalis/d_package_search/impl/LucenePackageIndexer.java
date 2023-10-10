@@ -7,7 +7,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 

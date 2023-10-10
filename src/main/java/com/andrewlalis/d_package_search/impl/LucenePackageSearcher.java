@@ -104,12 +104,11 @@ public class LucenePackageSearcher implements PackageSearcher {
 
         Query baseQuery = queryBuilder.build();
         System.out.println("Query: " + baseQuery.toString());
-        Query boostedQuery = new BooleanQuery.Builder()
+        return new BooleanQuery.Builder()
                 .add(baseQuery, BooleanClause.Occur.MUST)
                 .add(FeatureField.newSaturationQuery("features", "recency", 0.25f, 1f/30f), BooleanClause.Occur.SHOULD)
                 .add(FeatureField.newSaturationQuery("features", "downloads", 0.5f, 500f), BooleanClause.Occur.SHOULD)
                 .build();
-        return boostedQuery;
     }
 
     private PackageSearchResult prepareResult(Document doc, String explanation) {

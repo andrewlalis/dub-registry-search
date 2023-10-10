@@ -13,7 +13,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.*;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -53,7 +56,7 @@ public class DubRegistryPackageFetcher implements PackageFetcher {
 						try {
 							packages.add(parsePackage((ObjectNode) node, fetchedAt));
 						} catch (Exception e) {
-							e.printStackTrace();
+							System.err.println("Failed to parse package from JSON object: " + e.getMessage());
 						}
 					}
 				}
