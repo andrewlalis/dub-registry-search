@@ -9,7 +9,7 @@
 <h1>D Package Search</h1>
 
 <p>
-    Use this site to search for D packages!
+    Use this site to search for D packages. It's currently a proof-of-concept for using Lucene to index and search for D packages, since it offers a lot of out-of-the-box features for things like full-text indexing, scoring based on numerical features, and explaining exactly how results were found.
 </p>
 
 <input id="search-input" type="text" placeholder="Search for a package..."/>
@@ -27,26 +27,36 @@
         container.innerHTML = "";
         for (let i = 0; i < results.length; i++) {
             const element = document.createElement("div");
+            element.style = "border: 1px solid black; margin: 5px; padding: 5px;";
             const header = document.createElement("h3");
             header.innerText = results[i].name;
             element.appendChild(header);
             const link = document.createElement("a");
             link.href = results[i].url;
-            link.innerText = "Link to package";
+            link.innerText = results[i].url;
             element.appendChild(link);
+            const explanation = document.createElement("pre");
+            explanation.innerText = results[i].explanation;
+            element.appendChild(explanation);
             container.appendChild(element);
         }
     }
 
     const searchInput = document.getElementById("search-input");
+    let searchTimeoutId = null;
     searchInput.addEventListener("keyup", async () => {
         const query = searchInput.value;
+        if (searchTimeoutId) {
+            window.clearTimeout(searchTimeoutId);
+        }
         if (query.length < 1) {
             showResults([]);
             return;
         }
-        const results = await fetchResults(query);
-        showResults(results);
+        searchTimeoutId = window.setTimeout(async () => {
+            const results = await fetchResults(query);
+            showResults(results);
+        }, 1000);
     })
 </script>
 </body>

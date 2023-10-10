@@ -20,6 +20,22 @@ import java.util.concurrent.Executors;
  * search a Lucene index.
  */
 public class LucenePackageSearcher implements PackageSearcher {
+    /**
+     * Factor by which we prefer results containing the entire search phrase
+     * instead of just a part of it.
+     */
+    private static final float PHRASE_WEIGHT_MODIFIER = 2f;
+
+    /**
+     * A mapping of indexed fields, and the weight they contribute to a result's
+     * score, if the result contains a match for the field.
+     */
+    private static final Map<String, Float> WEIGHTED_FIELDS = Map.of(
+            "name", 1f,
+            "description", 0.5f,
+            "readme", 0.25f
+    );
+
     private final Path indexPath;
 
     public LucenePackageSearcher(Path indexPath) {
@@ -37,7 +53,11 @@ public class LucenePackageSearcher implements PackageSearcher {
             List<PackageSearchResult> results = new ArrayList<>(25);
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
                 Document doc = searcher.storedFields().document(scoreDoc.doc);
-                results.add(prepareResult(doc));
+                results.add(prepareResult(
+                        doc,
+                        "Search result scoring explanation:\n" +
+                        searcher.explain(luceneQuery, scoreDoc.doc).toString()
+                ));
             }
             return results;
         } catch (IOException e) {
@@ -55,35 +75,48 @@ public class LucenePackageSearcher implements PackageSearcher {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         String[] searchTerms = queryText.toLowerCase().split("\\s+");
 
-        // We define a set of weighted fields that we will add prefix queries for.
-        Map<String, Float> weightedFields = Map.of(
-                "name", 1f,
-                "description", 0.5f,
-                "readme", 0.25f
-        );
-
         // Only consider the first 5 search terms, and add a prefix query for each term for them.
         for (int i = 0; i < Math.min(5, searchTerms.length); i++) {
-            for (var entry : weightedFields.entrySet()) {
+            for (var entry : WEIGHTED_FIELDS.entrySet()) {
                 String fieldName = entry.getKey();
                 float fieldWeight = entry.getValue();
                 Query termQuery = new BoostQuery(new PrefixQuery(new Term(fieldName, searchTerms[i])), fieldWeight);
                 queryBuilder.add(termQuery, BooleanClause.Occur.SHOULD);
             }
         }
+
+        /*
+        If there's more than one word in the search query, put an extra emphasis
+        on finding a match with the entire query together. We use the PhraseQuery
+        builder to build an ordered phrase query for each of the weighted fields.
+         */
+        if (searchTerms.length > 1) {
+            for (var entry : WEIGHTED_FIELDS.entrySet()) {
+                String fieldName = entry.getKey();
+                float fieldWeight = entry.getValue();
+                PhraseQuery.Builder phraseQueryBuilder = new PhraseQuery.Builder();
+                for (int i = 0; i < searchTerms.length; i++) {
+                    phraseQueryBuilder.add(new Term(fieldName, searchTerms[i]), i);
+                }
+                queryBuilder.add(new BoostQuery(phraseQueryBuilder.build(), fieldWeight * PHRASE_WEIGHT_MODIFIER), BooleanClause.Occur.SHOULD);
+            }
+        }
+
         Query baseQuery = queryBuilder.build();
+        System.out.println("Query: " + baseQuery.toString());
         Query boostedQuery = new BooleanQuery.Builder()
                 .add(baseQuery, BooleanClause.Occur.MUST)
-                .add(FeatureField.newSaturationQuery("features", "recency"), BooleanClause.Occur.SHOULD)
-                .add(FeatureField.newSaturationQuery("features", "downloads"), BooleanClause.Occur.SHOULD)
+                .add(FeatureField.newSaturationQuery("features", "recency", 0.25f, 1f/30f), BooleanClause.Occur.SHOULD)
+                .add(FeatureField.newSaturationQuery("features", "downloads", 0.5f, 500f), BooleanClause.Occur.SHOULD)
                 .build();
         return boostedQuery;
     }
 
-    private PackageSearchResult prepareResult(Document doc) {
+    private PackageSearchResult prepareResult(Document doc, String explanation) {
         return new PackageSearchResult(
                 doc.get("name"),
-                doc.get("url")
+                doc.get("url"),
+                explanation
         );
     }
 }
