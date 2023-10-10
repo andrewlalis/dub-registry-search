@@ -7,11 +7,15 @@ import java.time.LocalDateTime;
  * @param name The name of the package.
  * @param categories The list of categories the package is in.
  * @param versions The known list of versions for this package.
+ * @param fetchedAt Timestamp for when this package was fetched exactly, so
+ *                  that later indexing can use a unified timestamp for reference.
  */
 public record PackageInfo(
         String name,
         String[] categories,
-        VersionInfo[] versions
+        VersionInfo[] versions,
+        long totalDownloads,
+        LocalDateTime fetchedAt
 ) {
     /**
      * Information about a specific version of a D package.

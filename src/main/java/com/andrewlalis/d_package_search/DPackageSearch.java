@@ -28,7 +28,7 @@ public class DPackageSearch {
 			while (true) {
 				indexGenerator.run();
 				try {
-					Thread.sleep(Duration.ofMinutes(1));
+					Thread.sleep(Duration.ofMinutes(5));
 				} catch (InterruptedException e) {
 					System.err.println("Indexing thread interrupted: " + e.getMessage());
 					break;

@@ -43,6 +43,7 @@ public class DubRegistryPackageFetcher implements PackageFetcher {
 			if (response.statusCode() != 200) {
 				throw new IOException("Response status code " + response.statusCode());
 			}
+			LocalDateTime fetchedAt = LocalDateTime.now(ZoneOffset.UTC);
 			ObjectMapper mapper = new ObjectMapper();
 			try (var in = new GZIPInputStream(response.body())) {
 				ArrayNode array = mapper.readValue(in, ArrayNode.class);
@@ -50,7 +51,7 @@ public class DubRegistryPackageFetcher implements PackageFetcher {
 				for (JsonNode node : array) {
 					if (node.isObject()) {
 						try {
-							packages.add(parsePackage((ObjectNode) node));
+							packages.add(parsePackage((ObjectNode) node, fetchedAt));
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
@@ -63,11 +64,13 @@ public class DubRegistryPackageFetcher implements PackageFetcher {
 		}
 	}
 
-	private PackageInfo parsePackage(ObjectNode obj) {
+	private PackageInfo parsePackage(ObjectNode obj, LocalDateTime fetchedAt) {
 		return new PackageInfo(
 				obj.get("name").asText(),
 				mapJsonArray(obj.withArray("categories"), JsonNode::asText).toArray(new String[0]),
-				mapJsonArray(obj.withArray("versions"), this::parseVersion).toArray(new PackageInfo.VersionInfo[0])
+				mapJsonArray(obj.withArray("versions"), this::parseVersion).toArray(new PackageInfo.VersionInfo[0]),
+				obj.get("stats").get("downloads").get("total").asLong(),
+				fetchedAt
 		);
 	}
 
@@ -97,6 +100,13 @@ public class DubRegistryPackageFetcher implements PackageFetcher {
 		);
 	}
 
+	/**
+	 * Maps a JSON array to a list of objects, using a mapping function.
+	 * @param array The JSON array.
+	 * @param mapper The mapper function to apply to each element of the array.
+	 * @return The mapped list of objects.
+	 * @param <T> The type of the resultant list elements.
+	 */
 	private static <T> List<T> mapJsonArray(ArrayNode array, Function<JsonNode, T> mapper) {
 		List<T> list = new ArrayList<>(array.size());
 		for (JsonNode node : array) {

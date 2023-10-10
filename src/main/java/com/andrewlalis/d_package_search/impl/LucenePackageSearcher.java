@@ -3,6 +3,7 @@ package com.andrewlalis.d_package_search.impl;
 import com.andrewlalis.d_package_search.PackageSearchResult;
 import com.andrewlalis.d_package_search.PackageSearcher;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FeatureField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
@@ -11,12 +12,13 @@ import org.apache.lucene.store.FSDirectory;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.SequencedCollection;
+import java.util.*;
 import java.util.concurrent.Executors;
 
+/**
+ * A package searcher implementation that uses a weighted wildcard query to
+ * search a Lucene index.
+ */
 public class LucenePackageSearcher implements PackageSearcher {
     private final Path indexPath;
 
@@ -52,12 +54,28 @@ public class LucenePackageSearcher implements PackageSearcher {
     private Query buildQuery(String queryText) {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         String[] searchTerms = queryText.toLowerCase().split("\\s+");
-        for (String searchTerm : searchTerms) {
-            String wildcardTerm = searchTerm + "*";
-            Query basicQuery = new WildcardQuery(new Term("name", wildcardTerm));
-            queryBuilder.add(new BoostQuery(basicQuery, 1f), BooleanClause.Occur.SHOULD);
+
+        Map<String, Float> weightedFields = Map.of(
+                "name", 1f,
+                "description", 0.5f,
+                "readme", 0.25f
+        );
+
+        for (int i = 0; i < Math.min(5, searchTerms.length); i++) {
+            for (var entry : weightedFields.entrySet()) {
+                String fieldName = entry.getKey();
+                float fieldWeight = entry.getValue();
+                Query termQuery = new BoostQuery(new PrefixQuery(new Term(fieldName, searchTerms[i])), fieldWeight);
+                queryBuilder.add(termQuery, BooleanClause.Occur.SHOULD);
+            }
         }
-        return queryBuilder.build();
+        Query baseQuery = queryBuilder.build();
+        Query boostedQuery = new BooleanQuery.Builder()
+                .add(baseQuery, BooleanClause.Occur.MUST)
+                .add(FeatureField.newSaturationQuery("features", "recency"), BooleanClause.Occur.SHOULD)
+                .add(FeatureField.newSaturationQuery("features", "downloads"), BooleanClause.Occur.SHOULD)
+                .build();
+        return boostedQuery;
     }
 
     private PackageSearchResult prepareResult(Document doc) {

@@ -79,7 +79,7 @@ public final class WebApiRunner extends Handler.Abstract implements Runnable {
             if (idx != -1) {
                 String key = pair.substring(0, idx);
                 if (key.trim().equalsIgnoreCase("query")) {
-                    return pair.substring(idx + 1).trim().toUpperCase();
+                    return pair.substring(idx + 1).trim().toLowerCase();
                 }
             }
         }
