@@ -36,6 +36,11 @@ public class LucenePackageSearcher implements PackageSearcher {
             "readme", 0.25f
     );
 
+    /**
+     * The maximum number of results to show.
+     */
+    private static final int MAX_RESULTS = 10;
+
     private final Path indexPath;
 
     public LucenePackageSearcher(Path indexPath) {
@@ -49,8 +54,8 @@ public class LucenePackageSearcher implements PackageSearcher {
 
         try (DirectoryReader dirReader = DirectoryReader.open(FSDirectory.open(indexPath))) {
             IndexSearcher searcher = new IndexSearcher(dirReader, Executors.newVirtualThreadPerTaskExecutor());
-            TopDocs topDocs = searcher.search(luceneQuery, 25, Sort.RELEVANCE, false);
-            List<PackageSearchResult> results = new ArrayList<>(25);
+            TopDocs topDocs = searcher.search(luceneQuery, MAX_RESULTS, Sort.RELEVANCE, false);
+            List<PackageSearchResult> results = new ArrayList<>(MAX_RESULTS);
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
                 Document doc = searcher.storedFields().document(scoreDoc.doc);
                 results.add(prepareResult(
