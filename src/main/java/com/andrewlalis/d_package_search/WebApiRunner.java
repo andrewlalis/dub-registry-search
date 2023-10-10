@@ -37,7 +37,8 @@ public final class WebApiRunner extends Handler.Abstract implements Runnable {
         threadPool.setName("http-server");
         Server server = new Server(threadPool);
         ServerConnector connector = new ServerConnector(server);
-        connector.setPort(8080);
+        connector.setPort(DPackageSearch.getIntProp("server.port", 8080));
+        connector.setHost(DPackageSearch.getStringProp("server.host"));
         server.addConnector(connector);
         server.setHandler(this);
         try {
