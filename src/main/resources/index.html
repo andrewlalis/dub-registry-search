@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>D Package Search</title>
+</head>
+<body>
+
+<h1>D Package Search</h1>
+
+<p>
+    Use this site to search for D packages!
+</p>
+
+<input id="search-input" type="text" placeholder="Search for a package..."/>
+
+<div id="result-container"></div>
+
+<script>
+    async function fetchResults(query) {
+        const response = await fetch("/search?query=" + encodeURIComponent(query))
+        return await response.json();
+    }
+
+    function showResults(results) {
+        const container = document.getElementById("result-container");
+        container.innerHTML = "";
+        for (let i = 0; i < results.length; i++) {
+            const element = document.createElement("div");
+            const header = document.createElement("h3");
+            header.innerText = results[i].name;
+            element.appendChild(header);
+            const link = document.createElement("a");
+            link.href = results[i].url;
+            link.innerText = "Link to package";
+            element.appendChild(link);
+            container.appendChild(element);
+        }
+    }
+
+    const searchInput = document.getElementById("search-input");
+    searchInput.addEventListener("keyup", async () => {
+        const query = searchInput.value;
+        if (query.length < 1) {
+            showResults([]);
+            return;
+        }
+        const results = await fetchResults(query);
+        showResults(results);
+    })
+</script>
+</body>
+</html>

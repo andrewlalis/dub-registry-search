@@ -11,10 +11,10 @@ import java.util.ArrayList;
 public class DPackageSearch {
 	public static void main(String[] args) {
 		Path indexPath = Path.of("package-index");
-		startIndexerThread(new IndexGenerator(
-				new DubRegistryPackageFetcher(),
-				() -> new LucenePackageIndexer(indexPath)
-		));
+//		startIndexerThread(new IndexGenerator(
+//				new DubRegistryPackageFetcher(),
+//				() -> new LucenePackageIndexer(indexPath)
+//		));
 		new WebApiRunner(new LucenePackageSearcher(indexPath)).run();
 	}
 

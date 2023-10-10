@@ -7,6 +7,7 @@ import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
+import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -62,6 +63,13 @@ public final class WebApiRunner extends Handler.Abstract implements Runnable {
                     response.getHeaders().add("Content-Type", "application/json; charset=utf-8");
                     byte[] responseBody = objectMapper.writeValueAsBytes(results);
                     response.write(true, ByteBuffer.wrap(responseBody), callback);
+                }
+            } else if (uri.getPath().equalsIgnoreCase("/index.html") || uri.getPath().equalsIgnoreCase("/")) {
+                try (var in = WebApiRunner.class.getClassLoader().getResourceAsStream("index.html")) {
+                    if (in == null) throw new IOException("Resource doesn't exist.");
+                    response.setStatus(HttpStatus.OK_200);
+                    response.getHeaders().add("Content-Type", "text/html; charset=utf-8");
+                    response.write(true, ByteBuffer.wrap(in.readAllBytes()), callback);
                 }
             } else {
                 response.setStatus(HttpStatus.NOT_FOUND_404);

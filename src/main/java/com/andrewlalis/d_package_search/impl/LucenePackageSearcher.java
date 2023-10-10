@@ -55,12 +55,14 @@ public class LucenePackageSearcher implements PackageSearcher {
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         String[] searchTerms = queryText.toLowerCase().split("\\s+");
 
+        // We define a set of weighted fields that we will add prefix queries for.
         Map<String, Float> weightedFields = Map.of(
                 "name", 1f,
                 "description", 0.5f,
                 "readme", 0.25f
         );
 
+        // Only consider the first 5 search terms, and add a prefix query for each term for them.
         for (int i = 0; i < Math.min(5, searchTerms.length); i++) {
             for (var entry : weightedFields.entrySet()) {
                 String fieldName = entry.getKey();
